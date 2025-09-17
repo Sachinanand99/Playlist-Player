@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Course Viewer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background-color: #121212;
+      overflow: hidden;
+    }
+    .container-fluid {
+      height: 100%;
+    }
+    #sidebar {
+      background-color: #212529;
+      height: calc(100vh);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+    }
+    #stickyHeader {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background-color: #212529;
+      padding: 1rem;
+      text-align: center;
+      border-bottom: 1px solid #333;
+    }
+    #moduleAccordion {
+      flex-grow: 1;
+      padding: 0.5rem 1rem;
+    }
+    .accordion-button span {
+      display: inline-block;
+      width: 100%;
+    }
+    .accordion-body {
+      padding: 0.5rem 0.5rem;
+    }
+    .list-group-item {
+      padding: 0.4rem 0.6rem;
+      font-size: 0.9rem;
+      margin-bottom: 2px;
+      background-color: #212529;
+      color: #fff;
+      border: none;
+    }
+    .file-meta { font-size: 0.8em; color: #adb5bd; }
+    .viewed-icon { color: #28a745; margin-left: 8px; }
+    .file-link { text-decoration: none; color: #fff; }
+    .file-link:hover { text-decoration: underline; }
+    #videoPlayer {
+      width: 100%;
+      height: calc(100vh);
+      object-fit: contain;
+      background-color: black;
+    }
+  </style>
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row h-100">
+      <!-- Sidebar -->
+      <div class="col-md-4 col-lg-3" id="sidebar">
+        <div id="stickyHeader">
+          <a href="/set-root" class="btn btn-outline-light btn-sm">🔄 Change Folder</a>
+        </div>
+        <div class="accordion" id="moduleAccordion">
+  <% modules.forEach((mod, index) => {
+    const safeId = mod.fullPath.replace(/[^a-zA-Z0-9]/g, '') + index;
+  %>
+    <div class="accordion-item bg-dark text-light">
+      <h2 class="accordion-header" id="heading<%= safeId %>">
+        <button class="accordion-button collapsed bg-dark text-light" type="button"
+  data-bs-toggle="collapse"
+  data-bs-target="#collapse<%= safeId %>"
+  aria-expanded="<%= selected?.module === mod.fullPath %>"
+  aria-controls="collapse<%= safeId %>"
+  style="padding-left: <%= 1 + (mod.depth || 0) * 1.2 %>rem; text-align: left;">
+  <%= mod.name %>
+</button>
+
+      </h2>
+      <div id="collapse<%= safeId %>" class="accordion-collapse collapse <%= selected?.module === mod.fullPath ? 'show' : '' %>"
+        aria-labelledby="heading<%= safeId %>" data-bs-parent="#moduleAccordion">
+        <div class="accordion-body">
+          <ul class="list-group">
+            <% mod.files.forEach(file => {
+              const fileKey = `${mod.fullPath}::${file.name}`;
+            %>
+              <li class="list-group-item d-flex justify-content-between align-items-center"
+    style="padding-left: <%= 1 + (mod.depth || 0) * 1.5 %>rem">
+
+                <a href="/?m=<%= encodeURIComponent(mod.fullPath) %>&f=<%= encodeURIComponent(file.name) %>" class="file-link" data-file="<%= fileKey %>">
+                  <i class="fas fa-<%= file.type === 'video' ? 'video' : file.type === 'pdf' ? 'file-pdf' : file.type === 'image' ? 'image' : 'file' %> me-2"></i>
+                  <%= file.name %>
+                </a>
+                <div class="d-flex align-items-center">
+                  <% if (file.meta) { %><span class="file-meta"><%= file.meta %></span><% } %>
+                  <span class="viewed-icon" id="viewed-<%= fileKey.replace(/[^a-zA-Z0-9]/g, '') %>" style="display: none;">✅</span>
+                </div>
+              </li>
+            <% }) %>
+          </ul>
+        </div>
+      </div>
+    </div>
+  <% }) %>
+</div>
+
+        </div>
+      </div>
+
+      <!-- Viewer -->
+      <div class="col-md-8 col-lg-9 p-0">
+        <% if (selected && selected.type === 'video') { %>
+          <video controls controlsList="nodownload" id="videoPlayer">
+            <source src="<%= selected.path %>" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        <% } else if (selected && selected.type === 'pdf') { %>
+          <iframe src="<%= selected.path %>" width="100%" height="100%" style="border: none;" onload="markViewed('<%= selected.module + '::' + selected.name %>'); setTimeout(getNextFile, 10000);"></iframe>
+        <% } else if (selected && selected.type === 'image') { %>
+          <img src="<%= selected.path %>" alt="<%= selected.name %>" class="img-fluid" onload="markViewed('<%= selected.module + '::' + selected.name %>'); setTimeout(getNextFile, 5000);" />
+        <% } else { %>
+          <p class="text-light p-3">Unsupported file type.</p>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const flatList = <%- JSON.stringify(flatList) %>;
+    const currentModule = "<%= selected?.module || '' %>";
+    const currentFile = "<%= selected?.name || '' %>";
+
+    function markViewed(fileKey) {
+      document.cookie = `viewed_${fileKey}=true; path=/`;
+      document.cookie = `lastViewedModule=${currentModule}; path=/`;
+      document.cookie = `lastViewedFile=${currentFile}; path=/`;
+
+      const el = document.getElementById('viewed-' + fileKey.replace(/[^a-zA-Z0-9]/g, ''));
+      if (el) el.style.display = 'inline';
+    }
+
+    function getNextFile() {
+      const index = flatList.findIndex(f => f.module === currentModule && f.name === currentFile);
+      if (index >= 0 && index < flatList.length - 1) {
+        const next = flatList[index + 1];
+        const url = `/?m=${encodeURIComponent(next.module)}&f=${encodeURIComponent(next.name)}`;
+        window.location.href = url;
+      }
+    }
+
+    document.querySelectorAll('.file-link').forEach(link => {
+      const fileKey = link.getAttribute('data-file');
+      if (document.cookie.includes(`viewed_${fileKey}=true`)) {
+        const el = document.getElementById('viewed-' + fileKey.replace(/[^a-zA-Z0-9]/g, ''));
+        if (el) el.style.display = 'inline';
+      }
+    });
+
+    const video = document.getElementById("videoPlayer");
+    if (video) {
+      video.addEventListener("ended", () => {
+        const fileKey = `${currentModule}::${currentFile}`;
+        markViewed(fileKey);
+        getNextFile();
+      });
+    }
+  </script>
+</body>
+</html>

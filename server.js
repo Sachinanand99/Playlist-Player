@@ -134,8 +134,14 @@ app.get("/file/*", (req, res) => {
 });
 
 app.get("/set-root", (req, res) => {
-  res.render("set-root");
+  try {
+    res.render("set-root");
+  } catch (err) {
+    console.error("Error in /set-root:", err);
+    res.status(500).send("Something went wrong.");
+  }
 });
+
 
 app.post("/set-root", async (req, res) => {
   const rootPath = req.body.root;

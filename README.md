@@ -1,4 +1,4 @@
-# Folder Viewer App
+# Playlist Player App
 
 ## Overview
 The Folder Viewer App is a Node.js and Express application that dynamically reads a folder structure and displays it in a web application. It features a sidebar for navigating modules and files, and provides functionality to play videos and display PDFs.
@@ -12,23 +12,15 @@ The Folder Viewer App is a Node.js and Express application that dynamically read
 ## Project Structure
 ```
 folder-viewer-app
-├── src
-│   ├── app.js
-│   ├── controllers
-│   │   └── fileController.js
-│   ├── routes
-│   │   └── index.js
-│   ├── views
-│   │   ├── layout.ejs
-│   │   ├── index.ejs
-│   │   ├── sidebar.ejs
-│   │   ├── video.ejs
-│   │   └── pdf.ejs
-│   └── public
-│       ├── css
-│       │   └── styles.css
-│       └── js
-│           └── main.js
+├── server.js                 # Main server logic
+├── views                    # EJS templates
+│   ├── index.ejs            # Main layout
+│   ├── set-root.ejs         # Folder selection page
+├── public                   # Static assets
+│   ├── css
+│   │   └── styles.css       # Custom styles
+│   └── js
+│       └── main.js          # Client-side logic
 ├── package.json
 └── README.md
 ```
@@ -53,9 +45,6 @@ folder-viewer-app
    npm start
    ```
 2. Open your web browser and navigate to `http://localhost:3000`.
-
-## Contributing
-Feel free to submit issues or pull requests for improvements or bug fixes.
 
 ## License
 This project is licensed under the MIT License.
